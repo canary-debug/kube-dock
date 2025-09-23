@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// 定义变量来存储 flag 的值
+// 存储 --config 的值
 var configPath string
 
 var dockerfileCmd = &cobra.Command{
