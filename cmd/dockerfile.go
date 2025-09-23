@@ -8,7 +8,10 @@ import (
 )
 
 // 存储 --config 的值
-var configPath string
+var (
+	configPath string
+	expose     string
+)
 
 var dockerfileCmd = &cobra.Command{
 	Use:   "dockerfile",
@@ -22,11 +25,14 @@ var dockerfileCmd = &cobra.Command{
 		}
 
 		fmt.Printf("🔧 正在操作 Dockerfile: %s\n", configPath)
+
+		fmt.Println("🔧 修改暴露的端口...", expose)
+
 	},
 }
 
 func init() {
-	// 添加 flag
+	// 添加 --config 用于指定 Dockerfile 文件位置
 	dockerfileCmd.Flags().StringVarP(
 		&configPath,           // 存储值的变量
 		"config",              // 标志名
@@ -35,8 +41,17 @@ func init() {
 		"指定 Dockerfile 文件的路径", // 帮助信息
 	)
 
+	// 添加 --expose 用于修改暴露的端口
+	dockerfileCmd.Flags().StringVarP(
+		&expose,   // 存储值的变量
+		"expose",  // 标志名
+		"e",       // 短选项
+		"80",      // 默认值（当前目录下的 Dockerfile）
+		"修改暴露的端口", // 帮助信息
+	)
+
 	// 如果你希望这个 flag 是必填的，取消下面这行注释
-	dockerfileCmd.MarkFlagRequired("config")
+	//dockerfileCmd.MarkFlagRequired("config")
 
 	// 命令注册
 	rootCmd.AddCommand(dockerfileCmd)
