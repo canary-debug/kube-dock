@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-// 存储 --config 的值
+/*
+存储 --config 的值
+存储 --expose 的值
+*/
 var (
 	configPath string
 	expose     string
@@ -20,6 +23,13 @@ var dockerfileCmd = &cobra.Command{
 	Short: "操作 Dockerfile 文件",
 	Long:  `用于修改、检查或生成 Dockerfile 的命令`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// 参数检查
+		if len(os.Args) <= 2 {
+			fmt.Println("❌ 错误：参数不足，至少需要指定 Dockerfile 配置文件")
+			fmt.Println("🚀用法: ./kube-dock --config <Dockerfile> --expose <port>")
+			return
+		}
+
 		// 检查文件是否存在
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			fmt.Fprintf(os.Stderr, "❌ 错误: Dockerfile 文件不存在: %s\n", configPath)
@@ -31,7 +41,7 @@ var dockerfileCmd = &cobra.Command{
 		*/
 		file, err := os.ReadFile(configPath)
 		if err != nil {
-			fmt.Println("读取配置文件错误:", err)
+			fmt.Println("❌ 读取配置文件错误:", err)
 			return
 		}
 
@@ -51,10 +61,10 @@ var dockerfileCmd = &cobra.Command{
 		// 写入文件
 		err = os.WriteFile(configPath, []byte(cleaned), 0644)
 		if err != nil {
-			fmt.Println("写入文件错误:", err)
+			fmt.Println("❌ 写入文件错误:", err)
 			return
 		}
-		fmt.Println("EXPOSE字段修改成功:", expose)
+		fmt.Println("🚀EXPOSE字段修改成功:", expose)
 
 	},
 }
