@@ -1,4 +1,4 @@
-# 工作流的名称
+# 名称
 name: Build Kube-dock
 
 # 触发工作流的事件
