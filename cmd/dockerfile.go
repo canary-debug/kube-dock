@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
+	"regexp"
+	"strings"
 )
 
 // 存储 --config 的值
@@ -24,9 +26,35 @@ var dockerfileCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("🔧 正在操作 Dockerfile: %s\n", configPath)
+		/*
+			读取配置文件内容
+		*/
+		file, err := os.ReadFile(configPath)
+		if err != nil {
+			fmt.Println("读取配置文件错误:", err)
+			return
+		}
 
-		fmt.Println("🔧 修改暴露的端口...", expose)
+		//正则匹配 EXPOSE [端口号]
+		pattern := `EXPOSE\s+(\d+)`
+		regex := regexp.MustCompile(pattern)
+
+		/*
+			匹配文件当中的 EXPOSE [端口] 字段
+			strings.Join 把 matches 数组中的元素用空格连接起来(转换为 staring 类型)
+			strings.Replace 把 matches 匹配到的内容替换为指定字段
+		*/
+		matches := regex.FindAllString(string(file), -1)
+		result := strings.Join(matches, " ")
+		cleaned := strings.Replace(string(file), result, "EXPOSE "+expose, -1)
+
+		// 写入文件
+		err = os.WriteFile(configPath, []byte(cleaned), 0644)
+		if err != nil {
+			fmt.Println("写入文件错误:", err)
+			return
+		}
+		fmt.Println("EXPOSE字段修改成功:", expose)
 
 	},
 }
