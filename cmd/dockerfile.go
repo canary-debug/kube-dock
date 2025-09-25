@@ -1,4 +1,3 @@
-// cmd/dockerfile.go
 package cmd
 
 import (
