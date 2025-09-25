@@ -38,32 +38,36 @@ var dockerfileCmd = &cobra.Command{
 		/*
 			读取配置文件内容
 		*/
+
 		file, err := os.ReadFile(configPath)
 		if err != nil {
 			fmt.Println("❌ 读取配置文件错误:", err)
 			return
 		}
 
-		//正则匹配 EXPOSE [端口号]
-		pattern := `EXPOSE\s+(\d+)`
-		regex := regexp.MustCompile(pattern)
+		// 只有当 --expose 参数不为空时才执行
+		if expose != "" {
+			//正则匹配 EXPOSE [端口号]
+			pattern := `EXPOSE\s+(\d+)`
+			regex := regexp.MustCompile(pattern)
 
-		/*
-			匹配文件当中的 EXPOSE [端口] 字段
-			strings.Join 把 matches 数组中的元素用空格连接起来(转换为 staring 类型)
-			strings.Replace 把 matches 匹配到的内容替换为指定字段
-		*/
-		matches := regex.FindAllString(string(file), -1)
-		result := strings.Join(matches, " ")
-		cleaned := strings.Replace(string(file), result, "EXPOSE "+expose, -1)
+			/*
+				匹配文件当中的 EXPOSE [端口] 字段
+				strings.Join 把 matches 数组中的元素用空格连接起来(转换为 staring 类型)
+				strings.Replace 把 matches 匹配到的内容替换为指定字段
+			*/
+			matches := regex.FindAllString(string(file), -1)
+			result := strings.Join(matches, " ")
+			cleaned := strings.Replace(string(file), result, "EXPOSE "+expose, -1)
 
-		// 写入文件
-		err = os.WriteFile(configPath, []byte(cleaned), 0644)
-		if err != nil {
-			fmt.Println("❌ 写入文件错误:", err)
-			return
+			// 写入文件
+			err = os.WriteFile(configPath, []byte(cleaned), 0644)
+			if err != nil {
+				fmt.Println("❌ 写入文件错误:", err)
+				return
+			}
+			fmt.Println("🚀EXPOSE字段修改成功:", expose)
 		}
-		fmt.Println("🚀EXPOSE字段修改成功:", expose)
 
 	},
 }
@@ -83,7 +87,7 @@ func init() {
 		&expose,   // 存储值的变量
 		"expose",  // 标志名
 		"e",       // 短选项
-		"80",      // 默认值（当前目录下的 Dockerfile）
+		"",        // 默认值（当前目录下的 Dockerfile）
 		"修改暴露的端口", // 帮助信息
 	)
 
