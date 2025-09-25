@@ -31,7 +31,7 @@ var dockerfileCmd = &cobra.Command{
 
 		// 检查文件是否存在
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "❌ 错误: Dockerfile 文件不存在: %s\n", configPath)
+			fmt.Printf("❌ 错误: Dockerfile 文件不存在: %s\n", configPath)
 			os.Exit(1)
 		}
 
