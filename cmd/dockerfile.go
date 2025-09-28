@@ -15,6 +15,7 @@ import (
 var (
 	configPath string
 	expose     string
+	addenv     []string
 )
 
 var dockerfileCmd = &cobra.Command{
@@ -38,14 +39,15 @@ var dockerfileCmd = &cobra.Command{
 		/*
 			读取配置文件内容
 		*/
-
 		file, err := os.ReadFile(configPath)
 		if err != nil {
 			fmt.Println("❌ 读取配置文件错误:", err)
 			return
 		}
 
-		// 只有当 --expose 参数不为空时才执行
+		// =========================================================
+		//  1. EXPOSE(只有当 --expose 参数不为空时才执行)
+		// =========================================================
 		if expose != "" {
 			//正则匹配 EXPOSE [端口号]
 			pattern := `EXPOSE\s+(\d+)`
@@ -57,6 +59,11 @@ var dockerfileCmd = &cobra.Command{
 				strings.Replace 把 matches 匹配到的内容替换为指定字段
 			*/
 			matches := regex.FindAllString(string(file), -1)
+			// 检测文件中是否有多个 EXPOSE 字段
+			if len(matches) >= 2 {
+				fmt.Println("❌ 错误：Dockerfile 中有多个 EXPOSE 字段请手动修改")
+				return
+			}
 			result := strings.Join(matches, " ")
 			cleaned := strings.Replace(string(file), result, "EXPOSE "+expose, -1)
 
@@ -67,6 +74,36 @@ var dockerfileCmd = &cobra.Command{
 				return
 			}
 			fmt.Println("🚀EXPOSE字段修改成功:", expose)
+		}
+
+		// =========================================================
+		//  2. ENV(只有当 --env 参数不为空时才执行)
+		// =========================================================
+		if strings.Join(addenv, "") != "" {
+			// 以读写追加的形式打开文件
+			file, err := os.OpenFile(configPath, os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				fmt.Println("❌ 读取配置文件错误:", err)
+				return
+			}
+			defer file.Close()
+
+			// 遍历 --env 参数
+			for _, env := range addenv {
+				if parts := strings.SplitN(env, "=", 2); len(parts) == 2 {
+					key, value := parts[0], parts[1]
+
+					// 文件写入
+					fmtenv := fmt.Sprintf("\nENV %s %s", key, value)
+					_, err := file.WriteString(fmtenv)
+					if err != nil {
+						fmt.Println("❌ 写入文件错误:", err)
+						return
+					}
+
+				}
+			}
+
 		}
 
 	},
@@ -86,11 +123,19 @@ func init() {
 	dockerfileCmd.Flags().StringVarP(
 		&expose,   // 存储值的变量
 		"expose",  // 标志名
-		"e",       // 短选项
+		"x",       // 短选项
 		"",        // 默认值（当前目录下的 Dockerfile）
 		"修改暴露的端口", // 帮助信息
 	)
 
+	// 添加 --env 用于添加系统环境变量
+	dockerfileCmd.Flags().StringSliceVarP(
+		&addenv,
+		"addenv",
+		"e",
+		nil,
+		"添加环境变量，格式: --addenv KEY=VALUE",
+	)
 	// 如果你希望这个 flag 是必填的，取消下面这行注释
 	//dockerfileCmd.MarkFlagRequired("config")
 
