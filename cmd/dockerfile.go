@@ -11,11 +11,14 @@ import (
 /*
 存储 --config 的值
 存储 --expose 的值
+存储 --addenv 的值
+存储 --add 的值
 */
 var (
 	configPath string
 	expose     string
 	addenv     []string
+	add        []string
 )
 
 var dockerfileCmd = &cobra.Command{
@@ -100,10 +103,36 @@ var dockerfileCmd = &cobra.Command{
 						fmt.Println("❌ 写入文件错误:", err)
 						return
 					}
-
 				}
 			}
+		}
 
+		// =========================================================
+		//  2. ADD(只有当 --add 参数不为空时才执行)
+		// =========================================================
+		if strings.Join(add, "") != "" {
+			// 以读写追加的形式打开文件
+			file, err := os.OpenFile(configPath, os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				fmt.Println("❌ 读取配置文件错误:", err)
+				return
+			}
+			defer file.Close()
+
+			// 遍历 --add 添加的参数
+			for _, add := range add {
+				if parts := strings.SplitN(add, "=", 2); len(parts) == 2 {
+					key, value := parts[0], parts[1]
+
+					// 文件写入
+					fmtadd := fmt.Sprintf("\nADD %s %s", key, value)
+					_, err := file.WriteString(fmtadd)
+					if err != nil {
+						fmt.Println("❌ 写入文件错误:", err)
+						return
+					}
+				}
+			}
 		}
 
 	},
@@ -136,7 +165,17 @@ func init() {
 		nil,
 		"添加环境变量，格式: --addenv KEY=VALUE",
 	)
-	// 如果你希望这个 flag 是必填的，取消下面这行注释
+
+	// 添加 --add 用于添加系统环境变量
+	dockerfileCmd.Flags().StringSliceVarP(
+		&add,
+		"add",
+		"a",
+		nil,
+		"添加ADD，格式: --add KEY=VALUE",
+	)
+
+	//如果你希望这个 flag 是必填的，取消下面这行注释
 	//dockerfileCmd.MarkFlagRequired("config")
 
 	// 命令注册
